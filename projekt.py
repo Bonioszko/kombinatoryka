@@ -241,6 +241,55 @@ def shortest_time(base_times, base_distances, time_stamps, distances, times, sta
     return dist, path
 
 
+def return_min_time_to_live(array, visited, time):
+    index_min = 0
+    min = 1000000
+    for i in range(len(array)):
+        if array[i][1]-time < min and visited[i] == 0 and array[i][1]-time > 0:
+            index_min = i
+    return index_min
+
+
+def shortest_time_to_live(base_times, base_distances, time_stamps, distances, times, start, end):
+    n = len(distances)
+    visited = [0]*n
+    path = []
+    dist = 0
+    time = start
+    x = 1
+    current = 0
+    start_time = 100000
+    start_index = 10000
+    for i in range(n):
+        if start_time > time_stamps[i][0]:
+            start_time = time_stamps[i][0]
+            start_index = i
+    div_start = time_stamps[start_index][0]-time-base_times[start_index]
+    if div_start > 0:
+        time += div_start
+    if time_stamps[start_index][1] < start + base_times[start_index]:
+        print("zle algorytm")
+    visited[start_index] = 1
+    time += base_times[start_index]
+    dist += base_distances[start_index]
+    current = start_index
+    for i in range(n):
+        next = return_min_time_to_live(time_stamps, visited, time)
+        visited[next] = 1
+        dist += distances[current][next]
+        time += times[current][next]
+        path.append(current)
+        current = next
+
+    dist += base_distances[current]
+    time += base_times[current]
+    if len(path) < len(distances):
+        print("tragedia")
+    return dist, path
+# chyba dziala
+
+
+# tutaj dopisze najblizsze czas, od aktualnego (moze zadziala)
 n = 8
 speed = 100
 distances = distance_graph_generate(2, 10, n)
@@ -262,9 +311,13 @@ distancesss, best_roadsss = brute_force_min_dist2(
     base_times, base_distances, time_stamps, distances, times, 100, 1440)
 distances_sh_time, path_sh_time = shortest_time(
     base_times, base_distances, time_stamps, distances, times, 100, 1440)
+distances_leave, path_leave = shortest_time_to_live(
+    base_times, base_distances, time_stamps, distances, times, 100, 1440)
 print(distancesss)
 print(best_roadsss)
 
 print(distances_sh_time)
 print(path_sh_time)
+print(distances_leave)
+print(path_leave)
 # dwa brute forcy zrobione teraz dopisac cos jeszcze jakies heurystyki czy cos
