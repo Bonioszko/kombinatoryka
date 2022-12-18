@@ -5,6 +5,8 @@ import pandas as pd
 import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
+import time
+import openpyxl
 
 
 def distance_graph_generate(distance_min, distance_max, n):
@@ -66,8 +68,6 @@ def brute_force_min_dist(time_stamps, distances, times, start, end):
     n = len(time_stamps)
     best_road = [0]*n
     min_dist = 100000000
-    work_time = end-start
-    min_time = 1000000
     # generuje tutaj wszystkie mozliwe permutacje listy o dlugosci n
     iterations = list(itertools.permutations(list(range(n))))
 
@@ -139,8 +139,6 @@ def brute_force_min_dist2(time_stamps, distances, times, start, end):
     n = len(time_stamps)
     best_road = [0]*n
     min_dist = 100000000
-    work_time = end-start
-    min_time = 1000000
     iterations = list(itertools.permutations(list(range(n))))
     for i in iterations:
         d = 0
@@ -235,7 +233,7 @@ def return_min_time_to_live(time_stamps, visited, time, current, times):
         div = time_stamps[i][0]-time - times[current][i]
         if div > 0:
             time += div
-        if time_stamps[i][1]-time < min and visited[i] == 0 and i != current and time_stamps[i][1]-time - times[current][i] > 0:
+        if time_stamps[i][1]-time < min and visited[i] == 0 and time_stamps[i][1]-time - times[current][i] > 0:
             min = time_stamps[i][1]-time
             index_min = i
             div_end = div
@@ -270,7 +268,8 @@ def shortest_time_to_live(time_stamps, distances, times, start, end):
         if time + times[current][-1] < end:
             path.append(current)
             dist += distances[current][start_index]
-        if dist < distance:
+
+        if dist < distance and len(path) == n:
             distance = dist
             best_path = path
     if len(best_path) == n:
@@ -279,60 +278,120 @@ def shortest_time_to_live(time_stamps, distances, times, start, end):
     return distance, best_path
 # chyba dziala
 
+# to dosc wazne na dole
 
-def test_na_ilosc(n, speed):
-    distances = distance_graph_generate(10, 70, n)
-    times = time_graph_generate(speed, distances)
-    time_stamps = time_stamps_generate(n, 200, 900, 250)
-    print(times)
-    print(distances)
-    print(time_stamps)
-    distancesss, best_roadsss = brute_force_min_dist2(
-        time_stamps, distances, times, 100, 1440)
-    print(distancesss)
-    print(best_roadsss)
-    distances1, best_road1 = brute_force_min_dist(
-        time_stamps, distances, times, 100, 1440)
-    print(distances1)
-    print(best_road1)
-    distances_sh_time, path_sh_time = shortest_time(
-        time_stamps, distances, times, 100, 1440)
-    distances_leave, path_leave = shortest_time_to_live(
-        time_stamps, distances, times, 100, 1440)
-    print(distances_sh_time)
-    print(path_sh_time)
-    print(distances_leave)
-    print(path_leave)
-    # Create a graph from the distance matrix
-    my_array = np.matrix(distances)
-    # Create a graph from the distance matrix
-    G = nx.from_numpy_matrix(my_array)
-    # Use the spring layout to position the nodes
-    pos = nx.spring_layout(G)
-    # Add labels to the nodes
-    labels = {
-        i: f" nr:{i} {time_stamps[i][0]}:{time_stamps[i][1]}" for i in G.nodes()}
-    nx.draw_networkx_labels(G, pos, labels, font_size=20)
-    indices = np.triu_indices_from(my_array)
-    # Create pairs of indices
-    pairs = list(zip(indices[0], indices[1]))
-    for i in range(len(pairs)):
-        t = list(pairs[i])
-        pairs[i] = t
-    # Use the pairs of indices to index the distances list
-    edges1 = []
-    for i, j in pairs:
-        if i != j:
-            edges1.append(my_array[i, j])
-    edge_labels = dict(zip(G.edges(), edges1))
-    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=20)
-    # Draw the graph
-    nx.draw(G, pos)
-    # Show the plot
+# def test_na_ilosc(n, speed):
+#     distances = distance_graph_generate(10, 70, n)
+#     times = time_graph_generate(speed, distances)
+#     time_stamps = time_stamps_generate(n, 200, 900, 200)
+#     print(times)
+#     print(distances)
+#     print(time_stamps)
+#     distancesss, best_roadsss = brute_force_min_dist2(
+#         time_stamps, distances, times, 100, 1440)
+#     print(distancesss)
+#     print(best_roadsss)
+#     distances1, best_road1 = brute_force_min_dist(
+#         time_stamps, distances, times, 100, 1440)
+#     print(distances1)
+#     print(best_road1)
+#     distances_sh_time, path_sh_time = shortest_time(
+#         time_stamps, distances, times, 100, 1440)
+#     distances_leave, path_leave = shortest_time_to_live(
+#         time_stamps, distances, times, 100, 1440)
+#     print(distances_sh_time)
+#     print(path_sh_time)
+#     print(distances_leave)
+#     print(path_leave)
+#     # Create a graph from the distance matrix
+#     my_array = np.matrix(distances)
+#     # Create a graph from the distance matrix
+#     G = nx.from_numpy_matrix(my_array)
+#     # Use the spring layout to position the nodes
+#     pos = nx.spring_layout(G)
+#     # Add labels to the nodes
+#     labels = {
+#         i: f" nr:{i} {time_stamps[i][0]}:{time_stamps[i][1]}" for i in G.nodes()}
+#     nx.draw_networkx_labels(G, pos, labels, font_size=20)
+#     indices = np.triu_indices_from(my_array)
+#     # Create pairs of indices
+#     pairs = list(zip(indices[0], indices[1]))
+#     for i in range(len(pairs)):
+#         t = list(pairs[i])
+#         pairs[i] = t
+#     # Use the pairs of indices to index the distances list
+#     edges1 = []
+#     for i, j in pairs:
+#         if i != j:
+#             edges1.append(my_array[i, j])
+#     edge_labels = dict(zip(G.edges(), edges1))
+#     nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=20)
+#     # Draw the graph
+#     nx.draw(G, pos)
+#     # Show the plot
+#     plt.show()
+
+
+# test_na_ilosc(5, 50)
+
+
+def vizualization(n, speed):
+    distance_list1 = []
+    distance_list2 = []
+    distance_list3 = []
+    distance_list4 = []
+    edges = []
+    for i in range(5, 11):
+        distances = distance_graph_generate(10, 70, i)
+        times = time_graph_generate(speed, distances)
+        time_stamps = time_stamps_generate(i, 200, 900, 200+(i*100))
+        start = time.time()
+        distancesss, best_roadsss = brute_force_min_dist2(
+            time_stamps, distances, times, 100, 1440 + (i*100))
+        end = time.time()
+        distance_list1.append(end-start)
+        # distances1, best_road1 = brute_force_min_dist(
+        #     time_stamps, distances, times, 100, 1440 + (i*100))
+        start = time.time()
+        distances_sh_time, path_sh_time = shortest_time(
+            time_stamps, distances, times, 100, 1440 + (i*100))
+        end = time.time()
+        distance_list3.append(end-start)
+        start = time.time()
+        distances_leave, path_leave = shortest_time_to_live(
+            time_stamps, distances, times, 100, 1440 + (i*100))
+        end = time.time()
+        distance_list4.append(end-start)
+        # # distance_list2.append(distances1)
+        # distance_list3.append(distances_sh_time)
+        # distance_list4.append(distances_leave)
+        edges.append(i)
+    fig = plt.figure()
+    fig.suptitle('`distances')
+    # Add a subplot
+    ax = fig.add_subplot(111)
+    # Plot the first line and set the label
+    ax.plot(edges, distance_list1, 'r--', label='brut_force', marker='.')
+    print(distance_list1)
+    # ax.plot(edges, distance_list2, 'g--', label='second')
+    ax.plot(edges, distance_list3, 'g--',  label='first_greedy', marker='.')
+    ax.plot(edges, distance_list4, 'b--', label='second_greedy', marker='.')
+    workbook = openpyxl.Workbook()
+    sheet = workbook.active
+    for i, item in enumerate(distance_list1):
+        sheet.cell(row=i+1, column=1).value = item
+    for i, item in enumerate(distance_list3):
+        sheet.cell(row=i+1, column=2).value = item
+    for i, item in enumerate(distance_list4):
+        sheet.cell(row=i+1, column=3).value = item
+    workbook.save('my_list.xlsx')
+    ax.legend(loc="upper left")
+    ax.set_xlabel('number of vertexes')
+    ax.set_ylabel('time to execute(s)')
     plt.show()
 
 
-test_na_ilosc(5, 50)
+vizualization(5, 50)
 
 # tutaj dopisze najblizsze czas, od aktualnego (moze zadziala)
 # n = 8

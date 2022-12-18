@@ -1,2 +1,1 @@
-if len(path) < len(distances):
-        #     print("tragedia")
+ax.plot(edges, distance_list2, 'g--', label='second')
